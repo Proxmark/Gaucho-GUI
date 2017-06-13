@@ -13,6 +13,7 @@ using System.Management;
 using System.Diagnostics;
 using DropDownTreeView;
 using System.IO;
+using System.Xml;
 
 #region
 // Proxmark III Tool
@@ -37,18 +38,42 @@ namespace Proxmark_Tool
     {
         public List<COMport> COMPorts = new List<COMport>();
         public TreeNode tvSettingsNodes = new TreeNode("Settings");
+        public XmlDocument pm3Commands = new XmlDocument();
 
         private static Form Help = null;
         private static WebBrowser browser = new WebBrowser();
+
+        public class CmdItem
+        {
+            public string Id;
+            public string ParentId;
+            public string Type;
+            public string Text;
+            public string Tooltip;
+            public string Action;
+            public Control Control;
+        }
         public frmMain()
         {
             InitializeComponent();
 
+            DropDownTreeNode ddtnCOMAutoDetect = new DropDownTreeNode("Autodetect Proxmark");
+            ddtnCOMAutoDetect.ComboBox.Items.AddRange(new string[]
+                    {
+                        "Autodetect Proxmark",
+                        "Manually Select COM Port"
+                    }
+                );
+            ddtnCOMAutoDetect.ComboBox.SelectedIndex = Convert.ToInt16(ConfigurationManager.AppSettings["Autodetect Proxmark"]);
+            ddtnCOMAutoDetect.ComboBox.SelectedIndexChanged += new EventHandler((sender, e) => cb_SelectedValueChanged("Autodetect Proxmark", ddtnCOMAutoDetect.ComboBox));
+
             COMPorts = getCOMports();
-            DropDownTreeNode ddtnCOMport = new DropDownTreeNode("COM1");
+            DropDownTreeNode ddtnCOMport = new DropDownTreeNode("Select COM Port");
+            ddtnCOMport.ComboBox.SelectedIndexChanged += new EventHandler((sender, e) => cb_SelectedValueChanged("Selected COM Port", ddtnCOMport.ComboBox));
             ddtnCOMport.ComboBox.Width = 200;
-            ddtnCOMport.ComboBox.MinimumSize = new Size(200,12);
+            ddtnCOMport.ComboBox.MinimumSize = new Size(200, 12);
             TreeNode tnCOMport = new TreeNode("COM Port");
+            tnCOMport.Nodes.Add(ddtnCOMAutoDetect);
             tnCOMport.Nodes.Add(ddtnCOMport);
             tvSettingsNodes.Nodes.Add(tnCOMport);
             //tvSettingsNodes.Nodes.Add("Some other setting.");
@@ -58,18 +83,25 @@ namespace Proxmark_Tool
 
             if (COMPorts.Count > 0)
             {
-
-                foreach (COMport port in COMPorts)
+                // Not thought out very well. If manual COM port selection is enabled and a serial device it attached or removed, this probably will not work.
+                int pm3Index = 0;
+                for (int i = 0; i < COMPorts.Count; i++)
                 {
-                    ddtnCOMport.ComboBox.Items.Add("(" + port.DeviceID + ") " +
-                        port.Description);
-
+                    ddtnCOMport.ComboBox.Items.Add("(" + COMPorts[i].DeviceID + ") " +
+                        COMPorts[i].Description);
+                    if (COMPorts.Exists(x => x.Description.Contains("Proxmark3")))
+                        pm3Index = i;
+                    if (COMPorts.Exists(x => x.PNPDeviceID.Contains("PROXMARK.ORG")))
+                        pm3Index = i;
                 }
-                if (COMPorts.Exists(x => x.Description.Contains("Proxmark3")))
-                    Trace.WriteLine("Description Match");
-                if (COMPorts.Exists(x => x.PNPDeviceID.Contains("PROXMARK.ORG")))
-                    Trace.WriteLine("PNPDeviceID Match");
-                //COMPorts.Contains(ConfigurationManager.AppSettings["SerialPort"])
+                if (ddtnCOMAutoDetect.ComboBox.SelectedIndex == 0)
+                {
+                    ddtnCOMport.ComboBox.SelectedIndex = pm3Index;
+                }
+                else
+                {
+                    ddtnCOMport.ComboBox.SelectedIndex = Convert.ToInt16(ConfigurationManager.AppSettings["Selected COM Port"]);
+                }
 
             }
             else
@@ -77,6 +109,40 @@ namespace Proxmark_Tool
                 Trace.WriteLine("No available ports");
                 Application.Exit();
             }
+
+            
+            string curDir = Directory.GetCurrentDirectory();
+            pm3Commands.Load(String.Format(@"{0}\pm3Commands.xml", curDir));
+            TreeNode pm3root = new TreeNode("PM3");
+            tvMain.Nodes.Add(pm3root);
+
+            ParseXmlNodes(pm3Commands.SelectSingleNode("pm3").ChildNodes, pm3root);
+            tvMain.ExpandAll();
+        }
+
+        public void ParseXmlNodes(XmlNodeList pm3Commands, TreeNode parentTvNode)
+        {
+            foreach (XmlNode node in pm3Commands)
+            {
+                TreeNode newNode = new TreeNode();
+                if (node.Name == "commands")
+                {
+                    newNode.Text = node.Attributes["title"].Value;
+                    newNode.ToolTipText = node.Attributes["tooltip"].Value;
+                    newNode.Tag = node.Attributes["id"].Value;
+                    parentTvNode.Nodes.Add(newNode);
+                    if (node.HasChildNodes)
+                        ParseXmlNodes(node.ChildNodes, newNode);
+                }
+            }
+        }
+
+        void cb_SelectedValueChanged(string AppSetting, ComboBox cb)
+        {
+            Configuration configuration = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            configuration.AppSettings.Settings[AppSetting].Value = cb.SelectedIndex.ToString();
+            configuration.Save();
+            ConfigurationManager.RefreshSection("appSettings");
         }
 
         public List<COMport> getCOMports()
@@ -130,9 +196,90 @@ namespace Proxmark_Tool
             Help.Controls.Add(browser);
         }
 
+        private void tvMain_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            ppm3Commands.Controls.Clear();
+            XmlNodeList nodes = pm3Commands.SelectNodes("//commands[@id='"+ e.Node.Tag+"']");
+            int y = 0;
+            foreach (XmlNode node in nodes)
+            {
+                XmlNodeList _controls = node.ChildNodes;
+                foreach (XmlNode _control in _controls)
+                {
+                    if (_control.Name == "item")
+                    {
+                        Trace.WriteLine(_control.Attributes["type"].Value);
+                        switch (_control.Attributes["type"].Value)
+                        {
+                            case "button":
+                                Button _button = new Button();
+                                _button.Text = _control.Attributes["text"].Value;
+                                _button.Tag = _control.Attributes["action"].Value;
+                                _button.Top = y;
+                                ppm3Commands.Controls.Add(_button);
+                                break;
+                            case "label":
+                                Label _label = new Label();
+                                _label.Text = _control.Attributes["text"].Value;
+                                _label.Top = y;
+                                ppm3Commands.Controls.Add(_label);
+                                break;
+                            case "textbox":
+                                TextBox _textbox = new TextBox();
+                                _textbox.Text = _control.Attributes["text"].Value;
+                                _textbox.Top = y;
+                                ppm3Commands.Controls.Add(_textbox);
+                                break;
+                            default:
+                                break;
+                        }
+                        y += 22;
+                        if (_control.HasChildNodes)
+                            y = tvMainChildControls(_control.ChildNodes, y);
+                    }
+                }
+            }
+        }
+
+        private int tvMainChildControls(XmlNodeList nodes, int y)
+        {
+            foreach (XmlNode _control in nodes)
+            {
+                if (_control.Name == "item")
+                {
+                    Trace.WriteLine(_control.Attributes["type"].Value);
+                    switch (_control.Attributes["type"].Value)
+                    {
+                        case "button":
+                            Button _button = new Button();
+                            _button.Text = _control.Attributes["text"].Value;
+                            _button.Tag = _control.Attributes["action"].Value;
+                            _button.Top = y;
+                            ppm3Commands.Controls.Add(_button);
+                            break;
+                        case "label":
+                            Label _label = new Label();
+                            _label.Text = _control.Attributes["text"].Value;
+                            _label.Top = y;
+                            ppm3Commands.Controls.Add(_label);
+                            break;
+                        case "textbox":
+                            TextBox _textbox = new TextBox();
+                            _textbox.Text = _control.Attributes["text"].Value;
+                            _textbox.Top = y;
+                            ppm3Commands.Controls.Add(_textbox);
+                            break;
+                        default:
+                            break;
+                    }
+                    y += 22;
+                    if (_control.HasChildNodes)
+                        y = tvMainChildControls(_control.ChildNodes, y);
+                }
+            }
+            return y;
+        }
     }
-
-
 
     public class COMport
     {

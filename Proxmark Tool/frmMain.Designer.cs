@@ -34,6 +34,7 @@
             this.tvMain = new System.Windows.Forms.TreeView();
             this.tpSettings = new System.Windows.Forms.TabPage();
             this.tvSettings = new DropDownTreeView.DropDownTreeView();
+            this.ppm3Commands = new System.Windows.Forms.Panel();
             this.tcMain.SuspendLayout();
             this.tpMain.SuspendLayout();
             this.tlpMain.SuspendLayout();
@@ -68,6 +69,7 @@
             this.tlpMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tlpMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tlpMain.Controls.Add(this.tvMain, 0, 0);
+            this.tlpMain.Controls.Add(this.ppm3Commands, 1, 0);
             this.tlpMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpMain.Location = new System.Drawing.Point(3, 3);
             this.tlpMain.Name = "tlpMain";
@@ -84,6 +86,7 @@
             this.tvMain.Name = "tvMain";
             this.tvMain.Size = new System.Drawing.Size(215, 294);
             this.tvMain.TabIndex = 0;
+            this.tvMain.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.tvMain_NodeMouseClick);
             // 
             // tpSettings
             // 
@@ -104,6 +107,14 @@
             this.tvSettings.Size = new System.Drawing.Size(443, 300);
             this.tvSettings.TabIndex = 0;
             // 
+            // ppm3Commands
+            // 
+            this.ppm3Commands.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ppm3Commands.Location = new System.Drawing.Point(224, 3);
+            this.ppm3Commands.Name = "ppm3Commands";
+            this.ppm3Commands.Size = new System.Drawing.Size(216, 294);
+            this.ppm3Commands.TabIndex = 1;
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -112,6 +123,7 @@
             this.Controls.Add(this.tcMain);
             this.KeyPreview = true;
             this.Name = "frmMain";
+            this.ShowIcon = false;
             this.Text = "Proxmark Tool";
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.frmMain_KeyDown);
             this.tcMain.ResumeLayout(false);
@@ -132,6 +144,7 @@
         //private System.Windows.Forms.TreeView tvSettings;
 
         private DropDownTreeView.DropDownTreeView tvSettings;
+        private System.Windows.Forms.Panel ppm3Commands;
     }
 }
 

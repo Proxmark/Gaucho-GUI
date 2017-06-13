@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<pm3>
+  <commands title="HF" tooltip="High frequence commands" id="2">
+
+    <!-- 14a -->
+    <commands title="14a" tooltip="ISO14443 Type A - commands" id="21">
+      <item type="button" text="list" tooltip="List ISO14443 history" action="hf 14a list" />
+      <item type="button" text="reader" tooltip="Act like an ISO14443 Type A reader" action="hf 14a reader" />
+      <item type="button" text="cuids" tooltip=" n Collect n>0 ISO14443 Type A UID:s in one go" action="hf 14a cuids" />
+      <item type="button" text="sim" tooltip="[UID] Fake ISO14443 Type A tag" action="hf 14a sim {0} {1}" id="211">
+        <item type="label" text="[type]" />
+        <item type="textbox" text="" />
+        <item type="label" text="[UID]" />
+        <item type="textbox" text="" />
+      </item>
+      <item type="button" text="snoop" tooltip="Eavsdrop ISO14443 Type A" action="hf 14a snoop" />
+    </commands>
+
+    <!-- 14b -->
+    <commands title="14b" tooltip="ISO14443 Type B - commands" id="22">
+      <item type="button" text="demod" tooltip="Demodulate ISO14443 Type B from tag" action="hf 14b demod" />
+      <item type="button" text="list" tooltip="List ISO14443 history" action="hf 14b list" />
+      <item type="button" text="read" tooltip="Act like an ISO14443 Type B reader" action="hf 14b read" />
+      <item type="button" text="sim" tooltip="Fake ISO14443 Type B tag" action="hf 14b sim" />
+      <item type="button" text="simlisten" tooltip="Get HF samples as fake tag" action="hf 14b simlisten" />
+      <item type="button" text="snoop" tooltip="Eavsdrop ISO14443 Type B" action="hf 14b snoop" />
+      <item type="button" text="sri512read" tooltip="[int] Read contents of a SRI512 tag" action="hf 14b sri512read" />
+      <item type="button" text="srix4kread" tooltip="[int] Read contents of a SRIX4K tag" action="hf 14b srix4kread" />
+    </commands>
+
+    <!-- IClass -->
+    <commands title="iClass" tooltip="iClass - commands" id="23">
+      <item type="button" text="list" tooltip="List iClass history" action="hf iclass list" />
+      <item type="button" text="snoop" tooltip="Eavesdrop iClass communication" action="hf iclass snoop" />
+      <item type="button" text="sim" tooltip="Simulate iClass tag" action="hf iclass sim {0} {1}" id="231">
+        <item type="label" text="[sim type]" />
+        <item type="textbox" text="" />
+        <item type="label" text="[CSN 16 hexsymbols]" />
+        <item type="textbox" text="" />
+      </item>
+      <item type="button" text="reader" tooltip="Read an iClass tag" action="hf iclass reader" />
+    </commands>
+
+    <!-- HF Other -->
+    <item type="button" text="tune" tooltip="Continuously measure HF antenna tuning" action="hf tune" />
+  
+  </commands>
+  <commands title="Macro" tooltip="Advanced functions using pm3 commands" id="10">
+    <item type="" text="" tooltip="" action="" />
+  </commands>
+</pm3>
