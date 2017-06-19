@@ -14,6 +14,7 @@ using System.Diagnostics;
 using DropDownTreeView;
 using System.IO;
 using System.Xml;
+using System.Threading;
 
 #region
 // Proxmark III Tool
@@ -36,13 +37,18 @@ namespace Proxmark_Tool
 {
     public partial class frmMain : Form
     {
-        public List<COMport> COMPorts = new List<COMport>();
         public TreeNode tvSettingsNodes = new TreeNode("Settings");
         public XmlDocument pm3Commands = new XmlDocument();
 
+        public List<COMport> _comPorts = new List<COMport>();
+        public SerialPort _comPort = new SerialPort();
+        public Thread _comThread;
+        delegate void _readCommPort();
+
+        delegate void SetrtbMainTextCallback(byte[] comData);
         private static Form Help = null;
         private static WebBrowser browser = new WebBrowser();
-
+        
         public class CmdItem
         {
             public string Id;
@@ -65,42 +71,61 @@ namespace Proxmark_Tool
                     }
                 );
             ddtnCOMAutoDetect.ComboBox.SelectedIndex = Convert.ToInt16(ConfigurationManager.AppSettings["Autodetect Proxmark"]);
+            ddtnCOMAutoDetect.ComboBox.Text = ddtnCOMAutoDetect.ComboBox.Items[ddtnCOMAutoDetect.ComboBox.SelectedIndex].ToString();
+
             ddtnCOMAutoDetect.ComboBox.SelectedIndexChanged += new EventHandler((sender, e) => cb_SelectedValueChanged("Autodetect Proxmark", ddtnCOMAutoDetect.ComboBox));
 
-            COMPorts = getCOMports();
+            _comPorts = getCOMports();
+
+            _comPort.BaudRate = 115200;
+            _comPort.DataBits = 8;
+            _comPort.Encoding = Encoding.Default;
+            _comPort.Handshake = Handshake.None;
+            _comPort.Parity = Parity.None;
+            _comPort.StopBits = StopBits.One;
+            _comPort.RtsEnable = true;
+            _comPort.DtrEnable = true;
+            _comPort.DataReceived += new SerialDataReceivedEventHandler(comRx);
+
             DropDownTreeNode ddtnCOMport = new DropDownTreeNode("Select COM Port");
             ddtnCOMport.ComboBox.SelectedIndexChanged += new EventHandler((sender, e) => cb_SelectedValueChanged("Selected COM Port", ddtnCOMport.ComboBox));
             ddtnCOMport.ComboBox.Width = 200;
             ddtnCOMport.ComboBox.MinimumSize = new Size(200, 12);
-            TreeNode tnCOMport = new TreeNode("COM Port");
-            tnCOMport.Nodes.Add(ddtnCOMAutoDetect);
-            tnCOMport.Nodes.Add(ddtnCOMport);
-            tvSettingsNodes.Nodes.Add(tnCOMport);
-            //tvSettingsNodes.Nodes.Add("Some other setting.");
-            tvSettings.Nodes.Add(tvSettingsNodes);
 
-            tvSettings.ExpandAll();
-
-            if (COMPorts.Count > 0)
+            if (_comPorts.Count > 0)
             {
                 // Not thought out very well. If manual COM port selection is enabled and a serial device it attached or removed, this probably will not work.
                 int pm3Index = 0;
-                for (int i = 0; i < COMPorts.Count; i++)
+                for (int i = 0; i < _comPorts.Count; i++)
                 {
-                    ddtnCOMport.ComboBox.Items.Add("(" + COMPorts[i].DeviceID + ") " +
-                        COMPorts[i].Description);
-                    if (COMPorts.Exists(x => x.Description.Contains("Proxmark3")))
+                    ddtnCOMport.ComboBox.Items.Add("(" + _comPorts[i].DeviceID + ") " +
+                        _comPorts[i].Description);
+                    if (_comPorts.Exists(x => x.Description.Contains("Proxmark3")))
                         pm3Index = i;
-                    if (COMPorts.Exists(x => x.PNPDeviceID.Contains("PROXMARK.ORG")))
+                    if (_comPorts.Exists(x => x.PNPDeviceID.Contains("PROXMARK.ORG")))
                         pm3Index = i;
                 }
                 if (ddtnCOMAutoDetect.ComboBox.SelectedIndex == 0)
                 {
                     ddtnCOMport.ComboBox.SelectedIndex = pm3Index;
+                    ddtnCOMport.ComboBox.Text = ddtnCOMport.ComboBox.Items[pm3Index].ToString();
+                    ddtnCOMport.ComboBox.SelectedValue = ddtnCOMport.ComboBox.Items[pm3Index].ToString();
+                    ddtnCOMport.ComboBox.SelectedItem = ddtnCOMport.ComboBox.Items[pm3Index];
                 }
                 else
                 {
                     ddtnCOMport.ComboBox.SelectedIndex = Convert.ToInt16(ConfigurationManager.AppSettings["Selected COM Port"]);
+                    ddtnCOMport.ComboBox.Text = ddtnCOMport.ComboBox.Items[ddtnCOMport.ComboBox.SelectedIndex].ToString();
+                }
+                try
+                {
+                    _comPort.PortName = _comPorts[ddtnCOMport.ComboBox.SelectedIndex].DeviceID;
+                    _comPort.Open();
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine("Failed to open port. Freaking out and exiting.\r\n" + ex.Message);
+                    Application.Exit();
                 }
 
             }
@@ -109,8 +134,17 @@ namespace Proxmark_Tool
                 Trace.WriteLine("No available ports");
                 Application.Exit();
             }
-
+            TreeNode tnCOMport = new TreeNode("COM Port");
+            tnCOMport.Nodes.Add(ddtnCOMAutoDetect);
+            tnCOMport.Nodes.Add(ddtnCOMport);
+            tvSettingsNodes.Nodes.Add(tnCOMport);
+            //tvSettingsNodes.Nodes.Add("Some other setting.");
+            tvSettings.Nodes.Add(tvSettingsNodes);
             
+
+            tvSettings.ExpandAll();
+
+
             string curDir = Directory.GetCurrentDirectory();
             pm3Commands.Load(String.Format(@"{0}\pm3Commands.xml", curDir));
             TreeNode pm3root = new TreeNode("PM3");
@@ -120,6 +154,49 @@ namespace Proxmark_Tool
             tvMain.ExpandAll();
         }
 
+        private void comRx(object sender, SerialDataReceivedEventArgs e)
+        {
+            // This was done deliberately.
+            // Just incase there is a requirement for packet joining, start of message, etc... 
+                if (_comPort.IsOpen)
+                {
+                    int bytes = 0;
+                    try
+                    {
+                        bytes = _comPort.BytesToRead;
+                    }
+                    catch
+                    {
+                        // Probably closed the port or pulled the plug.
+                        return;
+                    }
+                    byte[] buffer = new byte[bytes];
+                    try
+                    {
+                        _comPort.Read(buffer, 0, bytes);
+                    }
+                    catch
+                    {
+                    // If we can't read move on. Probably closed the port or the USB adapter was removed...
+                    return;
+                    }
+                    try
+                    {
+                        this.BeginInvoke(new SetrtbMainTextCallback(setrtbText), new object[] { buffer });
+                    }
+                    catch
+                    {
+                    //Probably closing the app.
+                    return;
+                    }
+                }
+        }
+
+        private void setrtbText(byte[] buffer)
+        {
+            string comData = Encoding.UTF8.GetString(buffer);
+            rtbMain.AppendText(comData);
+        }
         public void ParseXmlNodes(XmlNodeList pm3Commands, TreeNode parentTvNode)
         {
             foreach (XmlNode node in pm3Commands)
@@ -198,7 +275,7 @@ namespace Proxmark_Tool
 
         private void tvMain_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
-            ppm3Commands.Controls.Clear();
+            scMain_2.Panel1.Controls.Clear();            
             XmlNodeList nodes = pm3Commands.SelectNodes("//commands[@id='"+ e.Node.Tag+"']");
             int y = 0;
             foreach (XmlNode node in nodes)
@@ -208,7 +285,6 @@ namespace Proxmark_Tool
                 {
                     if (_control.Name == "item")
                     {
-                        Trace.WriteLine(_control.Attributes["type"].Value);
                         switch (_control.Attributes["type"].Value)
                         {
                             case "button":
@@ -216,19 +292,20 @@ namespace Proxmark_Tool
                                 _button.Text = _control.Attributes["text"].Value;
                                 _button.Tag = _control.Attributes["action"].Value;
                                 _button.Top = y;
-                                ppm3Commands.Controls.Add(_button);
+                                _button.Click += new EventHandler((a, b) => b_Click(_control.Attributes["action"].Value, _button));
+                                scMain_2.Panel1.Controls.Add(_button);
                                 break;
                             case "label":
                                 Label _label = new Label();
                                 _label.Text = _control.Attributes["text"].Value;
                                 _label.Top = y;
-                                ppm3Commands.Controls.Add(_label);
+                                scMain_2.Panel1.Controls.Add(_label);
                                 break;
                             case "textbox":
                                 TextBox _textbox = new TextBox();
                                 _textbox.Text = _control.Attributes["text"].Value;
                                 _textbox.Top = y;
-                                ppm3Commands.Controls.Add(_textbox);
+                                scMain_2.Panel1.Controls.Add(_textbox);
                                 break;
                             default:
                                 break;
@@ -247,7 +324,6 @@ namespace Proxmark_Tool
             {
                 if (_control.Name == "item")
                 {
-                    Trace.WriteLine(_control.Attributes["type"].Value);
                     switch (_control.Attributes["type"].Value)
                     {
                         case "button":
@@ -255,19 +331,20 @@ namespace Proxmark_Tool
                             _button.Text = _control.Attributes["text"].Value;
                             _button.Tag = _control.Attributes["action"].Value;
                             _button.Top = y;
-                            ppm3Commands.Controls.Add(_button);
+                            _button.Click += new EventHandler((a, b) => b_Click(_control.Attributes["action"].Value, _button));
+                            scMain_2.Panel1.Controls.Add(_button);
                             break;
                         case "label":
                             Label _label = new Label();
                             _label.Text = _control.Attributes["text"].Value;
                             _label.Top = y;
-                            ppm3Commands.Controls.Add(_label);
+                            scMain_2.Panel1.Controls.Add(_label);
                             break;
                         case "textbox":
                             TextBox _textbox = new TextBox();
                             _textbox.Text = _control.Attributes["text"].Value;
                             _textbox.Top = y;
-                            ppm3Commands.Controls.Add(_textbox);
+                            scMain_2.Panel1.Controls.Add(_textbox);
                             break;
                         default:
                             break;
@@ -279,6 +356,14 @@ namespace Proxmark_Tool
             }
             return y;
         }
+        public void b_Click(string _action, Button _button)
+        {
+            //Send stuff
+
+            if (_comPort.IsOpen)
+                _comPort.WriteLine(_action);
+        }
+
     }
 
     public class COMport
