@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0"?>
 <pm3>
 
 
@@ -1410,24 +1410,30 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 	</section>		
 	
 	<section title="TAGs" tooltip="Tested LF Tags" uniqueId="lftags" >
-		<section title="AWID(Support 26bit/50bit RBH format)" tooltip="Well only standard 26/50bit in main stream SW, the 64bit yet to be developped perhaps in iceman fork">
+		<section title="AWID(Support 26bit/50bit RBH format)" tooltip="Well only standard 26 bit in main stream SW, the 64bit yet to be developped perhaps in iceman fork">
 			<section title="AWID FSK DEMODULATOR" tooltip="Demodulate a AWID FSK tags DEMODULATOR" uniqueId="awiddemod" label="">
 				<item type="textbox" defaultValue="" tooltip="Clock" uniqueId="awidfskclck" label="Clock value (optional - empty = auto-detect):" width="30" />		
 				<item type="checkbox" valueChecked="1" valueUnchecked="" defaultValue="unchecked" tooltip="Invert 0 and 1" uniqueId="awidfskinv" label="Invert (optional):" width="40"/>
-				<item type="button" text="DEMODULATE" tooltip="Press button to demodulate" action0="data fskawiddemod $awidfskclck $awidfskinv" />
+				<item type="button" text="DEMODULATE" tooltip="Press button to demodulate" action0="lf awid demo $awidfskclck $awidfskinv" />
 			</section>
-			<section title="AWID FSK Clone\Simulator sector" tooltip=" clone or simulate a AWID FSK tags" uniqueId="awidclonesim">
-				<item type="drop-down" defaultValue="" values="26,50,64" tooltip="Select Card format" uniqueId="awidCF" label="AWID card format:" width="60" />
-				<item type="textbox" defaultValue="" tooltip="AWID Facility Code" uniqueId="awidFC" label="AWID Facility Code:" width="140"/> 	
-				<item type="textbox" defaultValue="" tooltip="AWID Card Number Value" uniqueId="awidCN" label="AWID card Number:" width="140"/> 	
-				<item type="button" text="AWID FSK Clone to T55x7" tooltip="Press button to Clone AWID Tag to T55x7 TAG" action0="lf awid clone $awidCF $awidFC $awidCN" waitFor0="proxmark3>" action1="lf sea" waitFor1="proxmark3>"  />
+			<section title="AWID FSK Clone\Simulator sector [26 bits only]" tooltip=" clone or simulate a AWID FSK tags" uniqueId="awidclonesim">
+				<item type="drop-down" defaultValue="26" values="26,50,64" tooltip="Select Card format" uniqueId="awidCF" label="AWID card format:" width="60" />
+				<item type="textbox" defaultValue="118" tooltip="AWID Facility Code" uniqueId="awidFC" label="AWID Facility Code:" width="140"/> 	
+				<item type="textbox" defaultValue="999" tooltip="AWID Card Number Value" uniqueId="awidCN" label="AWID card Number:" width="140"/> 	
+				<item type="button" text="AWID [26bit only] FSK Clone to T55x7" tooltip="Press button to Clone AWID Tag to T55x7 TAG" action0="lf awid clone  $awidFC $awidCN" waitFor0="proxmark3>" action1="lf sea" waitFor1="proxmark3>"  />
+				<item type="label" label="
+					AWID Found - BitLength: 26, FC: 118, Card: 999 - Wiegand: 2ec07cf, Raw: 011db7b812e8e81111111111          
+					Valid AWID ID Found!          " />
+				<item type="button" text="AWID [26/50bit]  FSK Clone to T55x7" tooltip="Press button to Clone AWID Tag to T55x7 TAG" action0="lf awid clone $awidCF $awidFC $awidCN" waitFor0="proxmark3>" action1="lf sea" waitFor1="proxmark3>"  />
 				<item type="label" label="" />
-				<item type="button" text="Pyramid FSK Simulation" tooltip="Press button to Simulate a Pyramid Tag" action0="lf awid sim $awidCF $awidFC $awidCN" />
+				<item type="button" text="Pyramid [26bit only] FSK Simulation" tooltip="Press button to Simulate a Pyramid Tag" action0="lf awid sim  $awidFC $awidCN" />
+				<item type="label" label="" />
+				<item type="button" text="Pyramid [26/50bit] FSK Simulation" tooltip="Press button to Simulate a Pyramid Tag" action0="lf awid sim $awidCF $awidFC $awidCN" />
 				<item type="label" label="" />	
 			
 			</section>
 			<section title="AWID Help" tooltip="Help command shows AWID available commands" uniqueId="lfawidh" >
-				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf aw clone h" />
+				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf awid clone h" />
 				<item type="label" label="" />
 			</section>			
 		</section>
@@ -1550,7 +1556,7 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 			
 			</section>
 			<section title="FDX Help" tooltip="Help command shows FDX available commands" uniqueId="lfFDXh" >
-				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf aw clone h" />
+				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf fdx clone h" />
 				<item type="label" label="" />
 			</section>			
 		</section>
@@ -1577,14 +1583,14 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 				<item type="textbox" defaultValue="" tooltip="gproxii HID wiegand raw ID: " uniqueId="gproxiiUid" label="gproxii HID wiegand raw ID:" width="60" />
 				<item type="button" text="GPROXII FSK CLONE to T55xFC/CSN using HID wiegand UID method" tooltip="gproxii Clone to T55x7 using HID wiegand UID method" action0="lf hid clone $gproxiiUid" waitFor0="proxmark3>" action1="lf sea" waitFor1="proxmark3>"  />
 				<item type="label" label="" />
-				<item type="button" text="GPROXII FSK SIMULATION usign FC/CSN" tooltip="Press button to Simulate a GProxII Tag using FC/CSN method" action0="lf gproxii sim $gproxiiCF $gproxiiFC $gproxiiCN" />
+				<item type="button" text="GPROXII FSK SIMULATION using FC/CSN" tooltip="Press button to Simulate a GProxII Tag using FC/CSN method" action0="lf gproxii sim $gproxiiCF $gproxiiFC $gproxiiCN" />
 				<item type="label" label="" />	
 				<item type="button" text="GPROXII FSK SIMULATION" tooltip="Press button to Simulate a GProxII Tag using HID Wiegand raw ID method" action0="lf hid sim $gproxiiUid" />
 				<item type="label" label="" />	
 			
 			</section>
 			<section title="GPROXII Help" tooltip="Help command shows GPROXII available commands" uniqueId="lfGPROXIIh" >
-				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf aw clone h" />
+				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf gproxii clone h" />
 				<item type="label" label="" />
 			</section>			
 		</section>
@@ -1596,18 +1602,18 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 				<item type="button" text="READ" tooltip="Press button to read HID Prox Card II" action0="lf hid read" />
 			</section><section title="HID FSK DEMODULATE" tooltip="Realtime HID FSK demodulator" uniqueId="lfhiddemfsk" >
 				<item type="textbox" defaultValue="" tooltip="Find One" uniqueId="hidfskdemodfo" label="Find One (empty = continuous, 1 = find one):" width="15" />	
-				<item type="button" text="DEMODULATE" tooltip="Press button to FSK demodulate HID Prox Card (reads continuously until the button is pressed)" action0="lf hid fskdemod $hidfskdemodfo" />
+				<item type="button" text="DEMODULATE" tooltip="Press button to FSK demodulate HID Prox Card (reads continuously until the button is pressed)" action0="lf hid demod $hidfskdemodfo" />
 				<item type="label" label="
-	HID FSK demodulator, it loops continuously (or until the button is pressed) and if a HID 
-	tag enters the field it will capture and do the FSK demodulation and manchester decoding 
-	of the waveform to return the tag ID as a hex number. It seems the TAG ID is a 44 bit number 
-	and the number printed on the tag is usually bits 16 though 1 (bit 0 is possibly a parity bit)" />
+					HID FSK demodulator, it loops continuously (or until the button is pressed) and if a HID 
+					tag enters the field it will capture and do the FSK demodulation and manchester decoding 
+					of the waveform to return the tag ID as a hex number. It seems the TAG ID is a 44 bit number 
+					and the number printed on the tag is usually bits 16 though 1 (bit 0 is possibly a parity bit)" />
 			</section>		
 			
 			<section title="DATA HID DEMODULATE FSK" tooltip="Demodulate graph window as a HID FSK Tag " uniqueId="datafskhid" >
-				<item type="button" text="DEMODULATE" tooltip="Press button to demodulate graph window as a HID FSK Tag (takes the graphbuffer and hid demods it (for offline mode)" action0="data fskhiddemod" />
+				<item type="button" text="DEMODULATE" tooltip="Press button to demodulate graph window as a HID FSK Tag (takes the graphbuffer and hid demods it (for offline mode)" action0="lf hid demod" />
 				<item type="label" label="
-		This command allows demodulation and decoding from the graph buffer for HID tag." />
+						This command allows demodulation and decoding from the graph buffer for HID tag." />
 			</section>			
 			
 			<section title="HID SIMULATOR" tooltip="Simulate HID Prox Card II tag" uniqueId="hidsim">
@@ -1616,13 +1622,13 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 			</section>		
 			
 			<section title="HID CLONE" tooltip="Clone HID Prox Card II to T55x7 tag" uniqueId="hidclone">
-				<item type="textbox" defaultValue="" tooltip="HID ID Value" uniqueId="hidcID" label="HID Prox Card II ID (up to 85 bits):" width="140" />	
+				<item type="textbox" defaultValue="" tooltip="HID ID Value" uniqueId="hidcardID" label="HID Prox Card II ID (up to 85 bits):" width="140" />	
 				<item type="checkbox" valueChecked="l" valueUnchecked="" defaultValue="unchecked" tooltip="If checked, 85 bit ID will be used" uniqueId="85bitid" text="Check to use 85bit ID (not checked = 44bit ID)" />			
-				<item type="button" text="CLONE TO TAG" tooltip="Press button to clone HID Prox Card II to T55x7 tag" action0="lf hid clone $hidcID $85bitid" waitFor0="proxmark3>" action1="lf sea" waitFor1="proxmark3>" />	
+				<item type="button" text="CLONE TO TAG" tooltip="Press button to clone HID Prox Card II to T55x7 tag" action0="lf hid clone $hidcardID $85bitid" waitFor0="proxmark3>" action1="lf sea" waitFor1="proxmark3>" />	
 			</section>			
 			
 			<section title="HID Help" tooltip="Help command shows HID available commands" uniqueId="lfhidh" >
-				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf hid help" />
+				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf hid clone help" />
 			</section> 			
 		</section> 		
 		<section title="HITAG">	
@@ -1675,18 +1681,20 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 				<item type="button" text="READ" tooltip="Press button to read" action0="lf io read $ioproxread1" />
 			</section>
 			<section title="IOprox Clone\Simulator sector" tooltip=" clone or simulate a IOprox tags" uniqueId="ioproxclonesim">
-				<item type="textbox" defaultValue="" tooltip="IOprox Card Format Code" uniqueId="ioproxCF" label="Card Format Code [26/50/64]:" width="60" />
-				<item type="textbox" defaultValue="" tooltip="IOprox Card Format" uniqueId="ioproxCF" label="IOprox card format Code:" width="60" />
-				<item type="textbox" defaultValue="" tooltip="IOprox Facility Code" uniqueId="ioproxFC" label="IOprox facility Code:" width="60" />
-				<item type="textbox" defaultValue="" tooltip="IOprox Card Number Value" uniqueId="ioproxCN" label="IOprox card Number:" width="140"/> 	
-				<item type="button" text="IOprox Clone to T55x7" tooltip="Press button to Clone IOprox Tag to T55x7 TAG" action0="lf io clone $ioproxCF $ioproxCF $ioproxCN" waitFor0="proxmark3>" action1="lf sea" waitFor1="proxmark3>"  />
-				<item type="label" label="" />
-				<item type="button" text="io Simulation" tooltip="Press button to Simulate a ioprox fsk Tag" action0="lf io sim $ioproxCF $ioproxCF $ioproxCN" />
+				<item type="textbox" defaultValue="1" tooltip="IOprox Card Format" uniqueId="ioproxCF" label="IOprox card format Code:" width="60" />
+				<item type="textbox" defaultValue="7" tooltip="IOprox Facility Code" uniqueId="ioproxFC" label="IOprox facility Code:" width="60" />
+				<item type="textbox" defaultValue="53156" tooltip="IOprox Card Number Value" uniqueId="ioproxCN" label="IOprox card Number:" width="140"/> 	
+				<item type="button" text="IOprox Clone to T55x7" tooltip="Press button to Clone IOprox Tag to T55x7 TAG" action0="lf io clone $ioproxCF $ioproxFC $ioproxCN" waitFor0="proxmark3>" action1="lf sea" waitFor1="proxmark3>"  />
+				<item type="label" label="
+									proxmark3> lf io clone 1 7 53156
+									Cloning tag with ID 00000001 77553156
+				" />
+				<item type="button" text="io Simulation" tooltip="Press button to Simulate a ioprox fsk Tag" action0="lf io sim $ioproxCF $ioproxFC $ioproxCN" />
 				<item type="label" label="" />	
 			
 			</section>
 			<section title="IOprox Help" tooltip="Help command shows IOprox available commands" uniqueId="lfioh" >
-				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf io h" />
+				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf io clone h" />
 				<item type="label" label="" />
 			</section>			
 		</section>
@@ -1732,7 +1740,7 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 			
 			</section>
 			<section title="JABLOTRON HELP" tooltip="Help command shows jablotron available commands" uniqueId="lfjablotronh" >
-				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf aw clone h" />
+				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf jablotron clone h" />
 				<item type="label" label="" />
 			</section>			
 		</section>
@@ -1780,7 +1788,7 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 			</section>
 			
 			<section title="PARADOX Help" tooltip="Help command shows PARADOX available commands" uniqueId="lfPARADOXh" >
-				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf aw clone h" />
+				<item type="button" text="HELP" tooltip="Press button to obtain the Help info" action0="lf paradox clone h" />
 				<item type="label" label="" />
 			</section>			
 		</section>
@@ -1927,11 +1935,6 @@ lf simpsk 2 c 32 r 2 d 000102030405060708090A0B"/>
 			</section> 				
 			
 			<section title="T55XX Detect" tooltip="Must run Detect first on any suspected T55xx chip" uniqueId="t55xxdetect" >
-				<item type="button" text="DETECT" tooltip="Press button to detect T55xx " action0="lf t55xx detect" />
-			</section> 		
-				<section title="T55XX P1Detect" tooltip="Detect Page 1 of a t55xx chip " uniqueId="t55xxdetect" >
-				<item type="textbox" defaultValue="" tooltip="Chose to find One ... or find many" uniqueId="iofskdemodfo" label="Find One (empty = continuous, 1 = find one):" width="15" />
-                     
 				<item type="button" text="DETECT" tooltip="Press button to detect T55xx " action0="lf t55xx detect" />
 			</section> 		
 			
